@@ -2,7 +2,7 @@ pipeline {
     agent any
     
     environment {
-        SONAR_TOKEN = credentials('t') // Ton token SonarQube enregistré dans Jenkins
+        SONAR_TOKEN = credentials('t')  // Ton token SonarQube
     }
     
     stages {
@@ -15,21 +15,27 @@ pipeline {
         stage('Checkout') {
             steps {
                 echo 'Code récupéré depuis Git'
-                git branch: 'main', url: 'https://github.com/Mohamedyassin5/devops.git'
+                git url: 'https://github.com/Mohamedyassin5/devops.git', branch: 'main'
             }
         }
         
         stage('Build') {
             steps {
                 echo 'Build en cours...'
-                sh 'mvn clean install'
+                dir('timesheet-devops') {      // <-- dossier contenant le pom.xml
+                    sh 'mvn clean install'
+                }
             }
         }
-
+        
         stage('MVN SONARQUBE') {
             steps {
                 echo 'Analyse SonarQube en cours...'
-                sh "mvn sonar:sonar -Dsonar.projectKey=timesheet -Dsonar.host.url=http://192.168.56.73:9000 -Dsonar.login=$SONAR_TOKEN"
+                dir('timesheet-devops') {      // <-- même dossier pour Sonar
+                    withSonarQubeEnv('My SonarQube Server') { // Nom du serveur Sonar dans Jenkins
+                        sh "mvn sonar:sonar -Dsonar.login=$SONAR_TOKEN"
+                    }
+                }
             }
         }
     }
