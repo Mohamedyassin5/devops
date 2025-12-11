@@ -3,7 +3,7 @@ pipeline {
 
     environment {
         // Ton token SonarQube enregistré dans Jenkins
-        SONAR_TOKEN = credentials('SQ_TOKEN')
+        SONAR_TOKEN = credentials('sonarqube-token1')
     }
 
     stages {
@@ -28,10 +28,10 @@ pipeline {
                 script {
                     withSonarQubeEnv('SonarServer') {
                         sh """
-                        mvn sonar:sonar \
-                          -Dsonar.projectKey=devops \
-                          -Dsonar.host.url=http://192.168.56.73:9000 \
-                          -Dsonar.login=${SONAR_TOKEN}
+                            mvn sonar:sonar \
+                              -Dsonar.projectKey=devops \
+                              -Dsonar.host.url=http://192.168.56.73:9000 \
+                              -Dsonar.login=${SONAR_TOKEN}
                         """
                     }
                 }
