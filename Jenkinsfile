@@ -2,32 +2,50 @@ pipeline {
     agent any
     
     stages {
-        stage('Checkout et Analyse') {
+        stage('Explorer la structure') {
             steps {
                 script {
-                    // Checkout du code
+                    // Checkout
                     git url: 'https://github.com/Mohamedyassin5/devops.git'
                     
-                    // Vérification de la structure
+                    // Exploration complète
                     sh '''
-                        echo "=== Structure complète du repository ==="
-                        find . -type f -name "*.xml" -o -name "*.java" -o -name "Jenkinsfile" | sort
+                        echo "========================================="
+                        echo "STRUCTURE COMPLÈTE DU REPOSITORY"
+                        echo "========================================="
                         
-                        echo "=== Recherche de projets Maven ==="
-                        find . -name "pom.xml" -type f
-                        
-                        echo "=== Contenu du répertoire ==="
+                        echo ""
+                        echo "1. RACINE:"
                         ls -la
+                        
+                        echo ""
+                        echo "2. SOUS-DOSSIERS (niveau 1):"
+                        for d in */; do
+                            echo "=== $d ==="
+                            ls -la "$d" | head -5
+                        done
+                        
+                        echo ""
+                        echo "3. RECHERCHE DE POM.XML:"
+                        find . -name "pom.xml" -type f 2>/dev/null || echo "Aucun pom.xml trouvé"
+                        
+                        echo ""
+                        echo "4. RECHERCHE DE PROJETS:"
+                        find . -name "*.java" -o -name "*.py" -o -name "*.js" -o -name "Dockerfile" | head -20
+                        
+                        echo ""
+                        echo "5. FICHIERS DE CONFIGURATION:"
+                        find . -name "*.yml" -o -name "*.yaml" -o -name "*.properties" -o -name "application.*" | head -10
+                        
+                        echo ""
+                        echo "6. ARBRE COMPLET:"
+                        if command -v tree &> /dev/null; then
+                            tree -L 3
+                        else
+                            echo "Commande 'tree' non disponible"
+                            find . -maxdepth 3 -type d | sort
+                        fi
                     '''
-                    
-                    // Essayer de trouver le bon dossier
-                    dir('timesheet-devops') {
-                        sh '''
-                            echo "=== Dans timesheet-devops ==="
-                            ls -la
-                            find . -name "pom.xml" || echo "Pas de pom.xml ici"
-                        '''
-                    }
                 }
             }
         }
@@ -35,7 +53,7 @@ pipeline {
     
     post {
         always {
-            echo 'Pipeline terminé'
+            echo 'Exploration terminée'
         }
     }
 }
