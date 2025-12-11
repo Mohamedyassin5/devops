@@ -5,20 +5,37 @@ pipeline {
         stage('Checkout et Analyse') {
             steps {
                 script {
+                    // Checkout du code
                     git url: 'https://github.com/Mohamedyassin5/devops.git'
                     
-                    // Trouve le projet
-                    sh 'find . -name "pom.xml"'
+                    // Vérification de la structure
+                    sh '''
+                        echo "=== Structure complète du repository ==="
+                        find . -type f -name "*.xml" -o -name "*.java" -o -name "Jenkinsfile" | sort
+                        
+                        echo "=== Recherche de projets Maven ==="
+                        find . -name "pom.xml" -type f
+                        
+                        echo "=== Contenu du répertoire ==="
+                        ls -la
+                    '''
                     
-                    // Exécute dans le dossier "timesheet-devops" (REMPLACEZ par votre vrai dossier)
+                    // Essayer de trouver le bon dossier
                     dir('timesheet-devops') {
                         sh '''
-                            mvn clean compile test
-                            mvn sonar:sonar -Dsonar.host.url=http://192.168.56.73:9000
+                            echo "=== Dans timesheet-devops ==="
+                            ls -la
+                            find . -name "pom.xml" || echo "Pas de pom.xml ici"
                         '''
                     }
                 }
             }
+        }
+    }
+    
+    post {
+        always {
+            echo 'Pipeline terminé'
         }
     }
 }
