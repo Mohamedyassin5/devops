@@ -18,7 +18,10 @@ pipeline {
         stage('Build Maven') {
             steps {
                 echo "Running Maven build..."
-                sh "mvn clean install -DskipTests"
+                // Aller dans le dossier contenant le pom.xml
+                dir('timesheet-devops') {
+                    sh "mvn clean install -DskipTests"
+                }
             }
         }
 
@@ -27,12 +30,14 @@ pipeline {
                 echo "Running SonarQube analysis..."
                 script {
                     withSonarQubeEnv('SonarServer') {
-                        sh """
-                            mvn sonar:sonar \
-                              -Dsonar.projectKey=devops \
-                              -Dsonar.host.url=http://192.168.56.73:9000 \
-                              -Dsonar.login=${SONAR_TOKEN}
-                        """
+                        dir('timesheet-devops') {
+                            sh """
+                                mvn sonar:sonar \
+                                  -Dsonar.projectKey=devops \
+                                  -Dsonar.host.url=http://192.168.56.73:9000 \
+                                  -Dsonar.login=${SONAR_TOKEN}
+                            """
+                        }
                     }
                 }
             }
