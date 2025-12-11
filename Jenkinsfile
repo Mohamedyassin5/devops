@@ -1,36 +1,59 @@
 pipeline {
     agent any
-    
-    tools {
-        maven 'M2_HOME'
+
+    environment {
+        // Ton token SonarQube enregistré dans Jenkins
+        SONAR_TOKEN = credentials('SQ_TOKEN')
     }
-    
+
     stages {
-        stage('Explorer la structure') {
+
+        stage('Checkout') {
             steps {
+                echo "Cloning repository..."
+                git branch: 'main', url: 'https://github.com/Mohamedyassin5/devops.git'
+            }
+        }
+
+        stage('Build Maven') {
+            steps {
+                echo "Running Maven build..."
+                sh "mvn clean install -DskipTests"
+            }
+        }
+
+        stage('SonarQube Analysis') {
+            steps {
+                echo "Running SonarQube analysis..."
                 script {
-                    echo "=== DÉBUT DE L'EXPLORATION ==="
-                    
-                    sh '''
-                        echo "📍 Répertoire courant: $(pwd)"
-                        echo ""
-                        echo "📁 CONTENU:"
-                        ls -la
-                        echo ""
-                        echo "🔍 RECHERCHE POM.XML:"
-                        find . -name "pom.xml" -type f
-                        echo ""
-                        echo "📊 TOUS LES FICHIERS:"
-                        find . -type f | head -20
-                    '''
+                    withSonarQubeEnv('SonarServer') {
+                        sh """
+                        mvn sonar:sonar \
+                          -Dsonar.projectKey=devops \
+                          -Dsonar.host.url=http://192.168.56.73:9000 \
+                          -Dsonar.login=${SONAR_TOKEN}
+                        """
+                    }
+                }
+            }
+        }
+
+        stage("Quality Gate") {
+            steps {
+                echo "Waiting for SonarQube Quality Gate result..."
+                timeout(time: 2, unit: 'MINUTES') {
+                    waitForQualityGate abortPipeline: true
                 }
             }
         }
     }
-    
+
     post {
-        always {
-            echo "✅ Exploration terminée"
+        success {
+            echo "Pipeline executed successfully!"
+        }
+        failure {
+            echo "Pipeline failed!"
         }
     }
 }
