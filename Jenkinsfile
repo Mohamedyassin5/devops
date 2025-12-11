@@ -2,23 +2,66 @@ pipeline {
     agent any
     
     stages {
-        stage('Vérifier structure') {
+        stage('Vérifier la structure') {
             steps {
                 script {
-                    git url: 'https://github.com/Mohamedyassin5/devops.git'
+                    echo "=== DÉBUT DU PIPELINE ==="
                     
                     sh '''
-                        echo "=== VOICI CE QU'IL Y A DANS VOTRE REPOSITORY ==="
+                        echo "📍 Répertoire courant:"
+                        pwd
+                        
+                        echo ""
+                        echo "📁 Contenu de la racine:"
                         ls -la
+                        
                         echo ""
-                        echo "=== CHERCHE POM.XML ==="
-                        find . -name "pom.xml"
+                        echo "🔍 Recherche de pom.xml:"
+                        find . -name "pom.xml" -type f
+                        
                         echo ""
-                        echo "=== TOUS LES FICHIERS ==="
-                        find . -type f | head -30
+                        echo "🌳 Structure des dossiers:"
+                        find . -maxdepth 3 -type d | sort
                     '''
                 }
             }
+        }
+        
+        stage('Analyse SonarQube') {
+            when {
+                expression { 
+                    // Exécute seulement si on trouve un projet
+                    def pomFiles = findFiles(glob: '**/pom.xml')
+                    return pomFiles.size() > 0
+                }
+            }
+            steps {
+                script {
+                    echo "🔧 Construction et analyse..."
+                    
+                    // Cherche le premier projet Maven
+                    def pomFiles = findFiles(glob: '**/pom.xml')
+                    def projectDir = new File(pomFiles[0].path).parent
+                    
+                    echo "Projet trouvé dans: ${projectDir}"
+                    
+                    dir(projectDir) {
+                        sh '''
+                            echo "=== Build Maven ==="
+                            mvn clean compile test
+                            
+                            echo "=== Analyse SonarQube ==="
+                            mvn sonar:sonar -Dsonar.host.url=http://192.168.56.73:9000
+                        '''
+                    }
+                }
+            }
+        }
+    }
+    
+    post {
+        always {
+            echo "✅ Pipeline terminé"
         }
     }
 }
