@@ -1,9 +1,13 @@
 pipeline {
     agent any
 
+    tools {
+        maven 'Maven 3.9.0' // Remplace par le nom de ton Maven dans Jenkins
+        jdk 'Java 17'       // Remplace par la version de JDK installée sur Jenkins
+    }
+
     environment {
-        // Ton token SonarQube enregistré dans Jenkins
-        SONAR_TOKEN = credentials('sonarqube-token1')
+        SONAR_TOKEN = credentials('sonarqube-token1') // Ton token SonarQube dans Jenkins
     }
 
     stages {
@@ -18,9 +22,17 @@ pipeline {
         stage('Build Maven') {
             steps {
                 echo "Running Maven build..."
-                // Aller dans le dossier contenant le pom.xml
                 dir('timesheet-devops') {
-                    sh "mvn clean install -DskipTests"
+                    sh "mvn clean install" // Exécute avec les tests
+                }
+            }
+        }
+
+        stage('Run Tests') {
+            steps {
+                echo "Running tests separately..."
+                dir('timesheet-devops') {
+                    sh "mvn test"
                 }
             }
         }
@@ -29,7 +41,7 @@ pipeline {
             steps {
                 echo "Running SonarQube analysis..."
                 script {
-                    withSonarQubeEnv('SonarServer') {
+                    withSonarQubeEnv('SonarServer') { // Nom exact du serveur SonarQube configuré dans Jenkins
                         dir('timesheet-devops') {
                             sh """
                                 mvn sonar:sonar \
@@ -46,7 +58,7 @@ pipeline {
         stage("Quality Gate") {
             steps {
                 echo "Waiting for SonarQube Quality Gate result..."
-                timeout(time: 2, unit: 'MINUTES') {
+                timeout(time: 5, unit: 'MINUTES') { // Timeout sécurisé pour projets moyens/gros
                     waitForQualityGate abortPipeline: true
                 }
             }
@@ -58,7 +70,7 @@ pipeline {
             echo "Pipeline executed successfully!"
         }
         failure {
-            echo "Pipeline failed!"
+            echo "Pipeline failed! Check logs above for details."
         }
     }
 }
