@@ -1,59 +1,28 @@
 pipeline {
     agent any
     
+    tools {
+        maven 'M2_HOME'
+    }
+    
     stages {
-        stage('Vérifier la structure') {
+        stage('Explorer la structure') {
             steps {
                 script {
-                    echo "=== DÉBUT DU PIPELINE ==="
+                    echo "=== DÉBUT DE L'EXPLORATION ==="
                     
                     sh '''
-                        echo "📍 Répertoire courant:"
-                        pwd
-                        
+                        echo "📍 Répertoire courant: $(pwd)"
                         echo ""
-                        echo "📁 Contenu de la racine:"
+                        echo "📁 CONTENU:"
                         ls -la
-                        
                         echo ""
-                        echo "🔍 Recherche de pom.xml:"
+                        echo "🔍 RECHERCHE POM.XML:"
                         find . -name "pom.xml" -type f
-                        
                         echo ""
-                        echo "🌳 Structure des dossiers:"
-                        find . -maxdepth 3 -type d | sort
+                        echo "📊 TOUS LES FICHIERS:"
+                        find . -type f | head -20
                     '''
-                }
-            }
-        }
-        
-        stage('Analyse SonarQube') {
-            when {
-                expression { 
-                    // Exécute seulement si on trouve un projet
-                    def pomFiles = findFiles(glob: '**/pom.xml')
-                    return pomFiles.size() > 0
-                }
-            }
-            steps {
-                script {
-                    echo "🔧 Construction et analyse..."
-                    
-                    // Cherche le premier projet Maven
-                    def pomFiles = findFiles(glob: '**/pom.xml')
-                    def projectDir = new File(pomFiles[0].path).parent
-                    
-                    echo "Projet trouvé dans: ${projectDir}"
-                    
-                    dir(projectDir) {
-                        sh '''
-                            echo "=== Build Maven ==="
-                            mvn clean compile test
-                            
-                            echo "=== Analyse SonarQube ==="
-                            mvn sonar:sonar -Dsonar.host.url=http://192.168.56.73:9000
-                        '''
-                    }
                 }
             }
         }
@@ -61,7 +30,7 @@ pipeline {
     
     post {
         always {
-            echo "✅ Pipeline terminé"
+            echo "✅ Exploration terminée"
         }
     }
 }
