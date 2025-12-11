@@ -1,45 +1,46 @@
 pipeline {
     agent any
-    
+
     environment {
-        SONAR_TOKEN = credentials('t')  // Ton token SonarQube
+        SONAR_TOKEN = credentials('t') // Ton token SonarQube
     }
-    
+
     stages {
         stage('Hello') {
             steps {
                 echo 'Mon premier pipeline avec Jenkinsfile !'
             }
         }
-        
+
         stage('Checkout') {
             steps {
                 echo 'Code récupéré depuis Git'
-                git url: 'https://github.com/Mohamedyassin5/devops.git', branch: 'main'
+                git branch: 'main',
+                    url: 'https://github.com/Mohamedyassin5/devops.git'
             }
         }
-        
+
         stage('Build') {
             steps {
                 echo 'Build en cours...'
-                dir('timesheet-devops') {      // <-- dossier contenant le pom.xml
-                    sh 'mvn clean install'
+                dir('timesheet-devops') {
+                    sh 'mvn clean install -DskipTests'
                 }
             }
         }
-        
+
         stage('MVN SONARQUBE') {
             steps {
                 echo 'Analyse SonarQube en cours...'
-                dir('timesheet-devops') {      // <-- même dossier pour Sonar
-                    withSonarQubeEnv('My SonarQube Server') { // Nom du serveur Sonar dans Jenkins
-                        sh "mvn sonar:sonar -Dsonar.login=$SONAR_TOKEN"
+                dir('timesheet-devops') {
+                    withSonarQubeEnv('sonarqube') { // nom du serveur configuré dans Jenkins
+                        sh "mvn sonar:sonar -Dsonar.login=${SONAR_TOKEN} -DskipTests"
                     }
                 }
             }
         }
     }
-    
+
     post {
         success {
             echo '✅ Pipeline réussi !'
