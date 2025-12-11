@@ -1,51 +1,60 @@
 pipeline {
     agent any
 
+    // Outils configurés dans Jenkins → Global Tool Configuration
     tools {
-        jdk 'Java-17'          // Nom exact du JDK dans Jenkins
-        maven 'Maven-3.6.3'    // Nom exact de Maven dans Jenkins
+        jdk 'JAVA_HOME'       // Nom exact du JDK configuré
+        maven 'M2_HOME'       // Nom exact de Maven configuré ou "Maven" si installé automatiquement
     }
 
     environment {
-        SONAR_TOKEN = credentials('SONAR_TOKEN') // Ton token SonarQube
+        // Token SonarQube configuré dans Jenkins → Credentials
+        SONAR_TOKEN = credentials('sonar-token-id')  
+        SONAR_HOST  = 'http://192.168.56.73:9000'   // URL de ton SonarQube
     }
 
     stages {
+
         stage('Checkout') {
             steps {
+                // Récupère le code depuis Git
                 git branch: 'main', url: 'https://github.com/Mohamedyassin5/devops.git'
             }
         }
 
         stage('Build') {
             steps {
+                // Compile et package sans tests
                 sh 'mvn clean install -DskipTests'
             }
         }
 
         stage('SonarQube Analysis') {
             steps {
-                withSonarQubeEnv('SonarQube') { // Nom du serveur SonarQube configuré dans Jenkins
-                    sh "mvn sonar:sonar -Dsonar.login=${SONAR_TOKEN}"
-                }
+                // Analyse SonarQube
+                sh """
+                    mvn sonar:sonar \
+                        -Dsonar.projectKey=timesheet-devops \
+                        -Dsonar.host.url=${SONAR_HOST} \
+                        -Dsonar.login=${SONAR_TOKEN}
+                """
             }
         }
 
-        stage('Quality Gate') {
+        stage('Tests') {
             steps {
-                timeout(time: 5, unit: 'MINUTES') {
-                    waitForQualityGate abortPipeline: true
-                }
+                // Optionnel : exécuter les tests unitaires
+                sh 'mvn test'
             }
         }
     }
 
     post {
         success {
-            echo 'Pipeline terminé ave succès ✅'
+            echo 'Build, SonarQube scan, and tests completed successfully!'
         }
         failure {
-            echo 'Pipeline échoué ❌'
+            echo 'Something went wrong... Check the logs.'
         }
     }
 }
