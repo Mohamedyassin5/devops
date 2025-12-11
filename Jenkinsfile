@@ -1,50 +1,57 @@
 pipeline {
     agent any
 
+    // Outils configurés dans Jenkins → Global Tool Configuration
     tools {
-        jdk 'JAVA17'          // Nom exact du JDK configuré dans Jenkins
-        maven 'Maven-3.6.3'   // Nom exact de Maven configuré dans Jenkins
+        jdk 'JAVA_HOME'       // Nom exact du JDK configuré
+        maven 'M2_HOME'       // Nom exact de Maven configuré ou "Maven" si installé automatiquement
     }
 
     environment {
-        SONAR_TOKEN = credentials('t')                 // Ton token SonarQube
-        SONAR_HOST  = 'http://192.168.56.73:9000'     // URL de ton SonarQube
+        // Token SonarQube configuré dans Jenkins → Credentials
+        SONAR_TOKEN = credentials('t')  
+        SONAR_HOST  = 'http://192.168.56.73:9000'   // URL de ton SonarQube
     }
 
     stages {
+
         stage('Checkout') {
             steps {
-                git branch: 'main',
-                    url: 'https://github.com/Mohamedyassin5/devops.git',
-                    credentialsId: 'be8674b5-7e9e-433f-9ac1-ec156c203b7f' // Ton credential GitHub
+                // Récupère le code depuis Git
+                git branch: 'main', url: 'https://github.com/Mohamedyassin5/devops.git'
             }
         }
 
         stage('Build') {
             steps {
-                script {
-                    sh "mvn clean package"
-                }
+                // Compile et package sans tests
+                sh 'mvn clean install -DskipTests'
             }
         }
 
         stage('SonarQube Analysis') {
             steps {
-                script {
-                    sh """
+                // Analyse SonarQube
+                sh """
                     mvn sonar:sonar \
                         -Dsonar.projectKey=timesheet-devops \
                         -Dsonar.host.url=${SONAR_HOST} \
                         -Dsonar.login=${SONAR_TOKEN}
-                    """
-                }
+                """
+            }
+        }
+
+        stage('Tests') {
+            steps {
+                // Optionnel : exécuter les tests unitaires
+                sh 'mvn test'
             }
         }
     }
 
     post {
         success {
-            echo 'Build and SonarQube analysis completed successfully.'
+            echo 'Build, SonarQube scan, and tests completed successfully!'
         }
         failure {
             echo 'Something went wrong... Check the logs.'
